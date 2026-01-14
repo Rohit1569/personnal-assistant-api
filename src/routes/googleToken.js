@@ -47,7 +47,7 @@ router.get("/google/callback", async (req, res) => {
     
     // Encode token data as base64
     const encodedTokens = Buffer.from(JSON.stringify(tokenData)).toString("base64");
-    res.redirect(`${process.env.FRONTEND_URL}/callback?tokens=${encodedTokens}`);
+    res.redirect(`${process.env.FRONTEND_URL}/auth/callback?tokens=${encodedTokens}`);
   } catch (err) {
     console.error("Error saving tokens:", err);
     res.status(500).send("Failed to save Google tokens");
