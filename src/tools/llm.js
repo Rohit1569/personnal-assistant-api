@@ -43,7 +43,7 @@ USER INSTRUCTION: "${userInstruction}"
       body: JSON.stringify({
         model: "openai/gpt-3.5-turbo",
         messages: [{ role: "user", content: prompt }],
-        temperature: 0.6,
+        temperature: 0.1,
         max_tokens: 600,
       }),
     });

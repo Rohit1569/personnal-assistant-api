@@ -66,8 +66,23 @@ async function createEvent(calendar, { title, start, end, description = "", part
 
   console.log(`📝 Creating event: "${eventTitle}" at ${start}`);
 
-  // Parse start time
-  const { startDateTime, endDateTime } = parseDateTime(start, end);
+  // Use the ISO string directly if provided by the LLM
+  let startDateTime, endDateTime;
+  try {
+    startDateTime = new Date(start);
+    if (isNaN(startDateTime.getTime())) throw new Error("Invalid start date");
+
+    if (end) {
+      endDateTime = new Date(end);
+    } else {
+      endDateTime = new Date(startDateTime.getTime() + 60 * 60 * 1000); // Default 1 hour
+    }
+  } catch (e) {
+    console.log("⚠️ Fallback to manual parsing for:", start);
+    const parsed = parseDateTime(start, end);
+    startDateTime = parsed.startDateTime;
+    endDateTime = parsed.endDateTime;
+  }
 
   const event = {
     summary: eventTitle,
@@ -75,11 +90,11 @@ async function createEvent(calendar, { title, start, end, description = "", part
     location,
     start: {
       dateTime: startDateTime.toISOString(),
-      timeZone: "UTC",
+      timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone || "Asia/Kolkata",
     },
     end: {
       dateTime: endDateTime.toISOString(),
-      timeZone: "UTC",
+      timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone || "Asia/Kolkata",
     },
   };
 
@@ -182,9 +197,9 @@ async function deleteEvent(calendar, { eventId, title }) {
         resolvedEventId = searchResult.id;
         console.log(`🔍 Found event by title: ${title} (ID: ${resolvedEventId})`);
       } else {
-        return { 
-          status: "ERROR", 
-          message: `Could not find event "${title}". Please check the event name or provide an event ID.` 
+        return {
+          status: "ERROR",
+          message: `Could not find event "${title}". Please check the event name or provide an event ID.`
         };
       }
     }
@@ -295,7 +310,7 @@ function parseDateTime(startStr, endStr) {
 
   if (startStr) {
     const lowerStr = startStr.toLowerCase();
-    
+
     // Handle "tomorrow"
     if (lowerStr.includes("tomorrow")) {
       startDateTime = new Date();
@@ -318,7 +333,7 @@ function parseDateTime(startStr, endStr) {
         const monthStr = dateMatch[2].toLowerCase().substring(0, 3); // Get first 3 chars: jan, feb, etc.
         const months = { jan: 0, feb: 1, mar: 2, apr: 3, may: 4, jun: 5, jul: 6, aug: 7, sep: 8, oct: 9, nov: 10, dec: 11 };
         const month = months[monthStr];
-        
+
         if (month !== undefined) {
           startDateTime = new Date();
           startDateTime.setMonth(month);
@@ -345,7 +360,7 @@ function parseDateTime(startStr, endStr) {
       /(\d{1,2})\s+(a\.m\.|am|a\.?m|p\.m\.|pm|p\.?m)/i,           // "3 p.m.", "3 pm"
       /(\d{1,2})(am|a\.m\.|a\.?m|pm|p\.m\.|p\.?m)/i               // "3pm", "3am" (no space)
     ];
-    
+
     let timeMatched = false;
     for (const pattern of timePatterns) {
       const timeMatch = startStr.match(pattern);
@@ -365,7 +380,7 @@ function parseDateTime(startStr, endStr) {
         break;
       }
     }
-    
+
     // Default to 2 PM if no time specified but date was specified
     if (!timeMatched && startStr.length > 0) {
       startDateTime.setHours(14, 0, 0, 0);
@@ -442,9 +457,9 @@ async function findEventByTitle(calendar, searchTitle) {
     });
 
     const events = response.data.items || [];
-    
+
     // Exact match first
-    let match = events.find(e => 
+    let match = events.find(e =>
       e.summary && e.summary.toLowerCase() === searchTitle.toLowerCase()
     );
 
