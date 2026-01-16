@@ -73,27 +73,47 @@ export async function emailAgent(action = "send", details = {}, userId = "user12
  * Send an email
  */
 async function sendEmail(gmail, { to, subject, body, promptForBody }) {
-  if (!to || !subject) {
-    return { status: "ERROR", message: "Email recipient and subject are required" };
+  if (!to) {
+    return { status: "ERROR", message: "Email recipient is required" };
   }
 
   const normalizedTo = extractEmail(to);
 
-  // Generate body using LLM if body is empty and prompt is provided
+  // Generate subject if missing
+  let finalSubject = subject;
+  if (!finalSubject || finalSubject.trim() === "") {
+    console.log("🧠 Generating email subject using LLM...");
+    const subjectPrompt = `Generate a short, professional email subject for this instruction: "${promptForBody || body || "Checking in"}"`;
+    finalSubject = await askLLM(subjectPrompt, true);
+    finalSubject = finalSubject.replace(/^Subject:\s*/i, "").trim();
+    console.log("✍️ Generated subject:", finalSubject);
+  }
+
+  // Determine if we need to professionalize the body
+  // If promptForBody is provided, OR if body is short/instruction-like
   let finalBody = body;
-  if ((!body || body.trim() === "") && promptForBody) {
+  const needsProfessionalizing = (!body || body.trim().split(" ").length < 10 || promptForBody);
+
+  if (needsProfessionalizing) {
     try {
-      console.log("🧠 Generating email body using LLM...");
-      finalBody = await askLLM(`Write a professional, concise email based on this instruction: "${promptForBody}"`);
+      console.log("🧠 Professionalizing email body using LLM...");
+      const instruction = promptForBody || body;
+      finalBody = await askLLM(`
+Write a professional, concise email body based on this instruction: "${instruction}".
+The email is to: ${normalizedTo}
+Subject: ${finalSubject}
+
+Output ONLY the body text, no 'Subject:' line or extra commentary.
+`);
       finalBody = finalBody.trim();
       console.log("✍️ Generated body:", finalBody);
     } catch (err) {
       console.error("❌ LLM body generation failed:", err);
-      finalBody = "";
+      finalBody = body || "";
     }
   }
 
-  const message = `To: ${normalizedTo}\r\nSubject: ${subject}\r\n\r\n${finalBody || ""}`;
+  const message = `To: ${normalizedTo}\r\nSubject: ${finalSubject}\r\n\r\n${finalBody || ""}`;
   const encodedMessage = Buffer.from(message)
     .toString("base64")
     .replace(/\+/g, "-")
@@ -109,7 +129,7 @@ async function sendEmail(gmail, { to, subject, body, promptForBody }) {
     status: "SUCCESS",
     action: "email_sent",
     to: normalizedTo,
-    subject,
+    subject: finalSubject,
     messageId: response.data.id,
     message: `✅ Email sent to ${normalizedTo}`,
     body: finalBody,
@@ -120,27 +140,46 @@ async function sendEmail(gmail, { to, subject, body, promptForBody }) {
  * Draft an email (save without sending)
  */
 async function draftEmail(gmail, { to, subject, body, promptForBody }) {
-  if (!to || !subject) {
-    return { status: "ERROR", message: "Email recipient and subject are required" };
+  if (!to) {
+    return { status: "ERROR", message: "Email recipient is required" };
   }
 
   const normalizedTo = extractEmail(to);
 
-  // Generate body using LLM if body is empty and prompt is provided
+  // Generate subject if missing
+  let finalSubject = subject;
+  if (!finalSubject || finalSubject.trim() === "") {
+    console.log("🧠 Generating draft email subject using LLM...");
+    const subjectPrompt = `Generate a short, professional email subject for this instruction: "${promptForBody || body || "Checking in"}"`;
+    finalSubject = await askLLM(subjectPrompt, true);
+    finalSubject = finalSubject.replace(/^Subject:\s*/i, "").trim();
+    console.log("✍️ Generated draft subject:", finalSubject);
+  }
+
+  // Determine if we need to professionalize the body
   let finalBody = body;
-  if ((!body || body.trim() === "") && promptForBody) {
+  const needsProfessionalizing = (!body || body.trim().split(" ").length < 10 || promptForBody);
+
+  if (needsProfessionalizing) {
     try {
-      console.log("🧠 Generating draft email body using LLM...");
-      finalBody = await askLLM(`Write a professional, concise email based on this instruction: "${promptForBody}"`);
+      console.log("🧠 Professionalizing draft email body using LLM...");
+      const instruction = promptForBody || body;
+      finalBody = await askLLM(`
+Write a professional, concise email body based on this instruction: "${instruction}".
+The email is to: ${normalizedTo}
+Subject: ${finalSubject}
+
+Output ONLY the body text, no 'Subject:' line or extra commentary.
+`);
       finalBody = finalBody.trim();
       console.log("✍️ Generated draft body:", finalBody);
     } catch (err) {
       console.error("❌ LLM draft body generation failed:", err);
-      finalBody = "";
+      finalBody = body || "";
     }
   }
 
-  const message = `To: ${normalizedTo}\r\nSubject: ${subject}\r\n\r\n${finalBody || ""}`;
+  const message = `To: ${normalizedTo}\r\nSubject: ${finalSubject}\r\n\r\n${finalBody || ""}`;
   const encodedMessage = Buffer.from(message)
     .toString("base64")
     .replace(/\+/g, "-")
@@ -158,7 +197,7 @@ async function draftEmail(gmail, { to, subject, body, promptForBody }) {
     status: "SUCCESS",
     action: "email_drafted",
     to: normalizedTo,
-    subject,
+    subject: finalSubject,
     draftId: response.data.id,
     message: `✅ Email draft created (not sent)`,
     body: finalBody,

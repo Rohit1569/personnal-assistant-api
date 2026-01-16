@@ -48,9 +48,13 @@ function safeParseJSON(input) {
  * Main orchestrator - routes commands to appropriate agents
  */
 export async function orchestrator(command, userId = "user123", accessToken = null) {
+  const now = new Date();
   const prompt = `
-You are an AI intent parser for Rohit, a productivity assistant. Extract details from the user's command.
-The assistant supports Email, Calendar, and Voice Calling.
+You are an AI intent parser for Rohit, a productivity assistant.
+Today's local time is: ${now.toString()} (ISO: ${now.toISOString()})
+
+Extract details from the user's command. 
+IMPORTANT: For calendar 'start' and 'end', always provide an ISO 8601 string. If the user says "tomorrow at 5pm", calculate the exact ISO string based on today's date.
 
 User command:
 "${command}"
@@ -64,8 +68,10 @@ Return ONLY valid JSON:
     "to": "",
     "subject": "",
     "body": "",
+    "promptForBody": "",
     "title": "",
-    "start": "",
+    "start": "ISO_8601_STRING",
+    "end": "ISO_8601_STRING",
     "phoneNumber": "",
     "purpose": "",
     "recipientName": ""
@@ -96,7 +102,9 @@ Return ONLY valid JSON:
       if (details.to || details.body) {
         const { email, body } = extractEmailAndBody(details.to || details.body);
         if (email) details.to = email;
-        if (body && !details.body) details.body = body;
+        if (body && !details.body) {
+          details.promptForBody = body; // Treat extracted body as a prompt
+        }
       }
 
       return await emailAgent(parsed.action, details, userId, accessToken);
