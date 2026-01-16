@@ -1,4 +1,4 @@
-import { makeCall } from "../services/twilioService.js";
+import { makeExotelCall } from "../services/exotelService.js";
 
 /**
  * Call Agent - Handles requests to make phone calls
@@ -25,9 +25,9 @@ export async function callAgent(action, details, userId, accessToken) {
     }
 
     try {
-        console.log(`🤖 CallAgent: Initiating call to ${phoneNumber} for ${purpose || 'general inquiry'}`);
+        console.log(`🤖 CallAgent (Exotel): Initiating call to ${phoneNumber} for ${purpose || 'general inquiry'}`);
 
-        const callResult = await makeCall(phoneNumber, purpose || "Identify as an AI assistant and help with the user's request", userId);
+        const callResult = await makeExotelCall(phoneNumber, purpose || "Identify as an AI assistant and help with the user's request", userId);
 
         return {
             status: "SUCCESS",

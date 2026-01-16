@@ -10,6 +10,7 @@ import cors from "cors";
 import googleTokenRoutes from "./routes/googleToken.js";
 import voiceCommandRoutes from "./routes/voiceCommand.js";
 import twilioWebhookRoutes from "./routes/twilioWebhook.js";
+import exotelWebhookRoutes from "./routes/exotelWebhook.js";
 import { sequelize } from "./db/sequelize.js";
 
 async function startServer() {
@@ -40,6 +41,7 @@ async function startServer() {
     // Voice command routes (Includes Calling Webhooks)
     app.use("/voice", voiceCommandRoutes);
     app.use("/voice", twilioWebhookRoutes);
+    app.use("/voice", exotelWebhookRoutes);
 
     // Health check
     app.get("/health", (req, res) => {
