@@ -7,16 +7,16 @@ const router = express.Router();
 // Middleware to extract token from Authorization header
 function extractToken(req, res, next) {
   const authHeader = req.headers.authorization;
-  
+
   console.log("🔍 Authorization header:", authHeader ? `${authHeader.substring(0, 30)}...` : "MISSING");
-  
+
   if (authHeader && authHeader.startsWith("Bearer ")) {
     req.accessToken = authHeader.slice(7);
     console.log("✅ Token extracted, length:", req.accessToken.length);
   } else {
     console.log("⚠️  No Bearer token found in header");
   }
-  
+
   next();
 }
 
@@ -26,7 +26,7 @@ router.post("/", async (req, res) => {
   const { userId, text } = req.body;
   const accessToken = req.accessToken;
 
-  console.log("📝 Voice command received:", { text, userId });
+  console.log("📥 [Voice Route] Request received:", { text, userId });
   console.log("🔑 Access token:", accessToken ? `${accessToken.substring(0, 20)}...` : "NOT PROVIDED");
 
   if (!userId || !text) {
@@ -49,7 +49,7 @@ router.post("/", async (req, res) => {
     console.log("  - req.accessToken:", req.accessToken ? `${req.accessToken.substring(0, 20)}...` : "UNDEFINED");
     console.log("  - accessToken variable:", accessToken ? `${accessToken.substring(0, 20)}...` : "UNDEFINED");
     console.log("  - Are they the same?", req.accessToken === accessToken);
-    
+
     // Pass accessToken to orchestrator
     const result = await orchestrator(text, userId, accessToken);
 
@@ -118,7 +118,7 @@ router.post("/", async (req, res) => {
             recipientEmail,
             accessToken
           );
-          
+
           if (confirmationResult && confirmationResult.status === "SUCCESS") {
             console.log(`✅ Confirmation email sent successfully`);
             message += ` (Confirmation email sent to ${recipientEmail})`;

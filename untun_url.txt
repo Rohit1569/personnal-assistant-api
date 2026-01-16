@@ -1,0 +1,9 @@
+◐ Starting cloudflared tunnel to http://localhost:4000
+
+🔥 Your installation of cloudflared software constitutes a symbol of your signature
+   indicating that you accept the terms of the Cloudflare License, Terms and Privacy Policy.
+
+❯ License:         https://developers.cloudflare.com/cloudflare-one/connections/connect-networks/downloads/license/
+❯ Terms:           https://www.cloudflare.com/terms/
+❯ Privacy Policy:  https://www.cloudflare.com/privacypolicy/
+

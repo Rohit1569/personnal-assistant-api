@@ -1,11 +1,11 @@
 import { askLLM } from "./tools/llm.js";
 import { emailAgent } from "./agents/emailAgent.js";
 import { calendarAgent } from "./agents/calendarAgent.js";
+import { callAgent } from "./agents/callAgent.js";
 
 /**
  * Helper: Extracts and normalizes an email address from a sentence
  * Supports voice commands like "Rohit Verma 1569 at gmail.com"
- * Returns { email, body }
  */
 function extractEmailAndBody(input) {
   if (!input) return { email: "", body: "" };
@@ -35,6 +35,7 @@ function extractEmailAndBody(input) {
  */
 function safeParseJSON(input) {
   try {
+    if (typeof input === "object") return input;
     const text = typeof input === "string" ? input.trim() : JSON.stringify(input);
     return JSON.parse(text);
   } catch (e) {
@@ -48,36 +49,33 @@ function safeParseJSON(input) {
  */
 export async function orchestrator(command, userId = "user123", accessToken = null) {
   const prompt = `
-You are an AI intent parser for a productivity assistant. Extract ALL details from the user's natural language command.
+You are an AI intent parser for Rohit, a productivity assistant. Extract details from the user's command.
+The assistant supports Email, Calendar, and Voice Calling.
 
 User command:
 "${command}"
 
-Return ONLY valid JSON (no markdown, no code blocks, no extra text):
+Return ONLY valid JSON:
 {
-  "intent": "email_send|email_draft|email_reply|email_search|email_label|email_summarize|calendar_create|calendar_modify|calendar_delete|calendar_list|calendar_availability",
-  "action": "send|draft|reply|search|label|summarize|create|modify|delete|list|check",
-  "service": "email|calendar",
+  "intent": "email_send|email_summarize|calendar_create|calendar_delete|voice_call",
+  "action": "send|summarize|create|delete|call",
+  "service": "email|calendar|voice",
   "details": {
     "to": "",
     "subject": "",
     "body": "",
     "title": "",
     "start": "",
-    "end": "",
-    "query": "",
-    "eventId": "",
-    "labels": [],
-    "participants": [],
-    "location": "",
-    "description": ""
+    "phoneNumber": "",
+    "purpose": "",
+    "recipientName": ""
   }
 }
 `;
 
   try {
-    // Call LLM
-    const llmResponse = await askLLM(prompt);
+    // Call LLM with full prompt override
+    const llmResponse = await askLLM(prompt, true);
     const parsed = safeParseJSON(llmResponse);
     if (!parsed) {
       return { status: "ERROR", message: "Failed to parse LLM response" };
@@ -95,14 +93,10 @@ Return ONLY valid JSON (no markdown, no code blocks, no extra text):
       const details = { ...parsed.details };
 
       // If 'to' or 'body' contains full sentence, extract proper email + body
-      if (details.to) {
-        const { email, body } = extractEmailAndBody(details.to);
+      if (details.to || details.body) {
+        const { email, body } = extractEmailAndBody(details.to || details.body);
         if (email) details.to = email;
-        if (body) details.body = body;
-      } else if (details.body) {
-        const { email, body } = extractEmailAndBody(details.body);
-        if (email) details.to = email;
-        if (body) details.body = body;
+        if (body && !details.body) details.body = body;
       }
 
       return await emailAgent(parsed.action, details, userId, accessToken);
@@ -113,9 +107,14 @@ Return ONLY valid JSON (no markdown, no code blocks, no extra text):
       return await calendarAgent(parsed.action, parsed.details, userId, accessToken);
     }
 
+    // --- Voice service (Calling) ---
+    if (parsed.service === "voice" || parsed.intent === "voice_call") {
+      return await callAgent(parsed.action, parsed.details, userId, accessToken);
+    }
+
     return {
       status: "ERROR",
-      message: "Could not determine service type"
+      message: "Could not determine service type. I can help with emails, calendar, and making phone calls."
     };
   } catch (error) {
     console.error("❌ Orchestrator error:", error.message);

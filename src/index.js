@@ -9,6 +9,7 @@ import express from "express";
 import cors from "cors";
 import googleTokenRoutes from "./routes/googleToken.js";
 import voiceCommandRoutes from "./routes/voiceCommand.js";
+import twilioWebhookRoutes from "./routes/twilioWebhook.js";
 import { sequelize } from "./db/sequelize.js";
 
 async function startServer() {
@@ -23,7 +24,7 @@ async function startServer() {
 
     const app = express();
 
-    // CORS configuration to allow Authorization header
+    // CORS configuration
     app.use(cors({
       origin: "*",
       credentials: true,
@@ -31,15 +32,18 @@ async function startServer() {
     }));
 
     app.use(express.json());
+    app.use(express.urlencoded({ extended: true }));
 
     // Google OAuth routes
     app.use("/auth", googleTokenRoutes);
 
-    // Voice command routes
+    // Voice command routes (Includes Calling Webhooks)
     app.use("/voice", voiceCommandRoutes);
+    app.use("/voice", twilioWebhookRoutes);
 
     // Health check
     app.get("/health", (req, res) => {
+      console.log("🏥 Health check pinged");
       res.json({ status: "ok" });
     });
 
