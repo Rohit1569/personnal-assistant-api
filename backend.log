@@ -1,0 +1,17 @@
+
+> personal-assistant@1.0.0 dev
+> nodemon src/index.js
+
+[33m[nodemon] 3.1.11[39m
+[33m[nodemon] to restart at any time, enter `rs`[39m
+[33m[nodemon] watching path(s): *.*[39m
+[33m[nodemon] watching extensions: js,mjs,cjs,json[39m
+[32m[nodemon] starting `node src/index.js`[39m
+[dotenv@17.2.3] injecting env (14) from .env -- tip: ⚙️  specify custom .env file path with { path: '/custom/path/.env' }
+DATABASE_URL = postgresql://postgres.gezluxqnbrdruufbthvk:Rohshalu@06@aws-1-ap-south-1.pooler.supabase.com:5432/postgres
+[dotenv@17.2.3] injecting env (0) from .env -- tip: 🛠️  run anywhere with `dotenvx run -- yourcommand`
+[dotenv@17.2.3] injecting env (0) from .env -- tip: 🛠️  run anywhere with `dotenvx run -- yourcommand`
+[dotenv@17.2.3] injecting env (0) from .env -- tip: ⚙️  suppress all logs with { quiet: true }
+✅ Database connected
+✅ Sequelize models synced
+🚀 Backend running on port 4000
