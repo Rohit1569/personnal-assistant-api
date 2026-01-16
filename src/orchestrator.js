@@ -51,10 +51,16 @@ export async function orchestrator(command, userId = "user123", accessToken = nu
   const now = new Date();
   const prompt = `
 You are an AI intent parser for Rohit, a productivity assistant.
-Today's local time is: ${now.toString()} (ISO: ${now.toISOString()})
+Today's local time (IST): ${now.toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' })}
+System ISO Time: ${now.toISOString()}
+
+USER TIMEZONE: IST (UTC+05:30)
 
 Extract details from the user's command. 
-IMPORTANT: For calendar 'start' and 'end', always provide an ISO 8601 string. If the user says "tomorrow at 5pm", calculate the exact ISO string based on today's date.
+IMPORTANT: 
+1. For calendar 'start' and 'end', always provide an ISO 8601 string including the Indian offset: e.g. "2026-01-16T09:00:00+05:30".
+2. Do NOT use 'Z' at the end detected ISO strings. Use '+05:30' instead.
+3. Use the IST context above to calculate "today", "tomorrow", etc.
 
 User command:
 "${command}"
@@ -70,8 +76,8 @@ Return ONLY valid JSON:
     "body": "",
     "promptForBody": "",
     "title": "",
-    "start": "ISO_8601_STRING",
-    "end": "ISO_8601_STRING",
+    "start": "YYYY-MM-DDTHH:mm:ss+05:30",
+    "end": "YYYY-MM-DDTHH:mm:ss+05:30",
     "phoneNumber": "",
     "purpose": "",
     "recipientName": ""
@@ -128,7 +134,7 @@ Return ONLY valid JSON:
     console.error("❌ Orchestrator error:", error.message);
     return {
       status: "ERROR",
-      message: `Failed to process command: ${error.message}`
+      message: `Failed to process command: ${error.message} `
     };
   }
 }
